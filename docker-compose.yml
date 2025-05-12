@@ -1,0 +1,42 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: go-stock-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: go_stock_api
+    ports:
+      - "13306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - backend
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: go-stock-api
+    restart: always
+    ports:
+      - "8001:8080"
+    depends_on:
+      - db
+    environment:
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: go_stock_api
+      GIN_MODE: release
+    networks:
+      - backend
+
+networks:
+  backend:
+
+
+volumes:
+  mysql_data:
