@@ -27,3 +27,10 @@ func GetAllStocks() ([]models.Stock, error) {
 	}
 	return stocks, nil
 }
+
+func StockExist(ticker string) (bool, error) {
+	var exists bool
+	query := `SELECT EXISTS(SELECT 1 FROM stocks WHERE ticker = ?)`
+	err := config.DB.QueryRow(query, ticker).Scan(&exists)
+	return exists, err
+}
