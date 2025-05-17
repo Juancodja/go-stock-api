@@ -1,36 +1,45 @@
 package controllers
 
 import (
-	"project/models"
-	"project/repositories"
+	"encoding/json"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"project/models"
+	"project/repositories"
+	"project/utils"
 )
 
-func CreateTransaction(c *gin.Context) {
+func TransactionsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	CreateTransaction(w, r)
+}
+
+func CreateTransaction(w http.ResponseWriter, r *http.Request) {
 	var tx models.Transaction
-	if err := c.ShouldBindJSON(&tx); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := json.NewDecoder(r.Body).Decode(&tx); err != nil {
+		utils.SendError(w, http.StatusBadRequest, "Invalid JSON: "+err.Error())
 		return
 	}
 
 	exists, err := repositories.StockExist(tx.Ticker)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "database error"})
+		utils.SendError(w, http.StatusInternalServerError, "database error")
 		return
 	}
 	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid stock ticker"})
+		utils.SendError(w, http.StatusBadRequest, "invalid stock ticker")
 		return
 	}
 
 	id, err := repositories.CreateTransaction(tx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	tx.ID = int(id)
-	c.JSON(http.StatusCreated, tx)
+	utils.SendJSON(w, http.StatusCreated, tx)
 }

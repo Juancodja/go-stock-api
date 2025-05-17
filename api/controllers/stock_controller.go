@@ -1,34 +1,46 @@
 package controllers
 
 import (
-	"project/models"
-	"project/repositories"
+	"encoding/json"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
+	"project/models"
+	"project/repositories"
+	"project/utils"
 )
 
-func CreateStock(c *gin.Context) {
+func StocksHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPost:
+		CreateStock(w, r)
+	case http.MethodGet:
+		GetAllStocks(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func CreateStock(w http.ResponseWriter, r *http.Request) {
 	var stock models.Stock
-	if err := c.ShouldBindJSON(&stock); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if err := json.NewDecoder(r.Body).Decode(&stock); err != nil {
+		utils.SendError(w, http.StatusBadRequest, "Invalid JSON: "+err.Error())
 		return
 	}
 
 	err := repositories.CreateStock(stock)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, stock)
+	utils.SendJSON(w, http.StatusCreated, stock)
 }
 
-func GetAllStocks(c *gin.Context) {
+func GetAllStocks(w http.ResponseWriter, r *http.Request) {
 	stocks, err := repositories.GetAllStocks()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, stocks)
+	utils.SendJSON(w, http.StatusOK, stocks)
 }

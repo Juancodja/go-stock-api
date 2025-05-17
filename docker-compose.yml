@@ -34,6 +34,21 @@ services:
     networks:
       - backend
 
+  pricer:
+    build:
+      context: ./pricer
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    environment:
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: go_stock_api
+    networks:
+      - backend
+
 networks:
   backend:
 

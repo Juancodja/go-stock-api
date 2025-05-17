@@ -1,53 +1,73 @@
 package controllers
 
 import (
-	"project/models"
-	"project/repositories"
+	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
-	"github.com/gin-gonic/gin"
+	"project/models"
+	"project/repositories"
+	"project/utils"
 )
 
-func CreateUser(c *gin.Context) {
+func UsersHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		GetAllUsers(w, r)
+	case "POST":
+		CreateUser(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		utils.SendError(w, http.StatusBadRequest, "Invalid JSON: "+err.Error())
 		return
 	}
 
 	id, err := repositories.CreateUser(user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		http.Error(w, "Error al crear usuario", http.StatusInternalServerError)
 		return
 	}
 
 	user.ID = int(id)
-	c.JSON(http.StatusCreated, user)
+
+	utils.SendJSON(w, http.StatusCreated, user)
 }
 
-func GetAllUsers(c *gin.Context) {
+func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := repositories.GetAllUsers()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		utils.SendError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, users)
+	utils.SendJSON(w, http.StatusOK, users)
 }
 
-func GetUserByID(c *gin.Context) {
-	idParam := c.Param("id")
-	id, err := strconv.Atoi(idParam)
+func UserByIDHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := strings.TrimPrefix(r.URL.Path, "/users/")
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user id"})
+		utils.SendError(w, http.StatusBadRequest, "invalid user id")
 		return
 	}
 
 	user, err := repositories.GetUserByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		utils.SendError(w, http.StatusNotFound, "user not found")
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	utils.SendJSON(w, http.StatusOK, user)
 }
