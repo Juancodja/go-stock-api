@@ -46,6 +46,8 @@ services:
       DB_HOST: db
       DB_PORT: 3306
       DB_NAME: go_stock_api
+    env_file:
+      - .env
     networks:
       - backend
 

@@ -3,7 +3,6 @@ FROM golang:1.22 AS builder
 WORKDIR /app
 
 COPY go.mod ./
-COPY .env ./
 RUN go mod download
 
 COPY . .
@@ -17,6 +16,7 @@ WORKDIR /app
 
 COPY --from=builder /app/go-stock-pricer .
 
-CMD ["source", ".env"]
+RUN chmod +x ./go-stock-pricer
+
 
 CMD ["./go-stock-pricer"]

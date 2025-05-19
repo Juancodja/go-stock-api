@@ -18,4 +18,6 @@ COPY --from=builder /app/go-stock-api .
 
 EXPOSE 8080
 
+RUN chmod +x ./go-stock-api
+
 CMD ["./go-stock-api"]
